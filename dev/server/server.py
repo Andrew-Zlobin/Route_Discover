@@ -125,6 +125,43 @@ def protected_route():#request: Request, user=Depends(manager)):
     return FileResponse(os.path.join(pages_path, "index.html"))
 
 
+@app.post('/get/dysplayable/points')
+def getDysplayablePoints(body = Body()):
+    body = json.loads(body)
+
+    print(body, flush=True)
+    return json.dumps({"sights" : fake_db.getSightInArea(body)})
+    
+@app.post('/get/sight/by/id')
+def getSightById (body = Body()):
+    body = json.loads(body)
+
+    print(body, flush=True)
+    # return {'success' : 'ok'} 
+    return fake_db.getSightById(body['id'])
+
+
+@app.post('/create/route')
+def createRoute (body = Body()):
+    body = json.loads(body)
+
+    print(body, flush=True)
+    fake_db.createNewRoute("user", body)
+    return {'success' : 'ok'} 
+    
+@app.post('/get/preferences')
+def getPrefereces():
+    return fake_db.getPrefereces()
+
+@app.post('/search/sutable/routes')
+def searchSutableRoutes (body= Body()):
+    body = json.loads(body)
+
+    print(body, flush=True)
+    return fake_db.searchSutableRoutes(body)
+
+
+
 app.mount("/", StaticFiles(directory=os.path.abspath(os.path.join( os.path.dirname(__file__), '..', 'client', 'static'))), name="static")
 
 

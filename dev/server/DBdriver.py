@@ -5,6 +5,8 @@ import http.client
 
 from http.client import RemoteDisconnected
 
+
+
 class DataBaseDriver:
 
     def __init__(self, uri, user, password):
@@ -86,6 +88,19 @@ class DataBaseDriver:
             values = session.execute_read(self._get_user_by_email, email)
             return values
         
+
+    @staticmethod  
+    def _get_all_routes(tx):
+        query = "match (n:UserRoute) return n"
+        result = tx.run(query)
+        return [record for record in result.data()]
+
+    def getAllRoutes(self):
+        with self.driver.session() as session:
+            values = session.execute_read(self._get_all_routes)
+            return values
+        
+    
     @staticmethod
     def _create_User(tx, newUser):
         query = ("CREATE (:User {email : $email,\
@@ -109,7 +124,68 @@ class DataBaseDriver:
             # greeting = session.execute_write(self._create_and_return_greeting, message)
             nodeName = session.execute_write(self._create_User, newUser)
             return nodeName
+
+
+    @staticmethod  
+    def _get_sights_in_bbox(tx, bbox):
+        query = "match (a:Sight) where a.lat > $latMin \
+                                    and a.lat < $latMax \
+                                    and a.lon > $lonMin \
+                                    and a.lon < $lonMax \
+                                    return a.id, a.lat, a.lon"
+        result = tx.run(query,
+                        latMin = bbox['latMin'],
+                        latMax = bbox['latMax'],
+                        lonMin = bbox['lonMin'],
+                        lonMax = bbox['lonMax'])
+        values = [record.values() for record in result]
+        return values
+        # return result
+
+    def getSightsInBbox(self, bbox):
+        with self.driver.session() as session:
+            values = session.execute_read(self._get_sights_in_bbox, bbox)
+            return values
         
+
+    @staticmethod  
+    def _get_sight_by_id(tx, id):
+        query = "match (a:Sight) where a.id = '"+ str(id) +"' return a"
+        result = tx.run(query)
+        # values = [record.values() for record in result]
+        # return values
+        return result.single().value()._properties
+
+    def getSightById(self, id):
+        with self.driver.session() as session:
+            values = session.execute_read(self._get_sight_by_id, id)
+            return values
+        
+    
+        
+
+    @staticmethod
+    def _create_User_route(tx, user, route):
+        query = (
+                "CREATE (ur:UserRoute{id : '"+ route["id"] +"',\
+                                     name : '"+ route["name"] +"',\
+                                     description : '"+ route["description"] +"', \
+                                     sightsSubsequenceIds : " + route["sightsSubsequenceIds"] + "})\
+                WITH ur\
+                MATCH (sight:Sight)\
+                WHERE sight.id IN ur.sightsSubsequenceIds \
+                CREATE (ur)-[:CONTAINS]->(sight)"
+                )
+                
+        result = tx.run(query)
+        record = result.single()
+        return record
+        
+    def createUserRoute(self, user, route):
+        with self.driver.session() as session:
+            # greeting = session.execute_write(self._create_and_return_greeting, message)
+            nodeName = session.execute_write(self._create_User_route, user, route)
+            return nodeName
 
 
 if __name__ == "__main__":
@@ -162,13 +238,11 @@ if __name__ == "__main__":
     f.close()
 
     # print(type(loader.getUserByEmail('zlobinandrey0707@gmail.com')))
-    user = {'email' : 'email',
-            'password' : 'password',
-            'firstName' : 'firstName',
-            'lastName' : 'lastName',
-            'phone' : 'phone',
-            'address' : 'address'}
-    print (loader.createUser(user))
+    bbox = {'latMin' : 59.92991679946971,
+            'latMax' : 59.931309097050196,
+            'lonMin' : 30.361646111301685,
+            'lonMax' : 30.368458922200304}
+    print (loader.getSightById(7099552))
 
 
 
