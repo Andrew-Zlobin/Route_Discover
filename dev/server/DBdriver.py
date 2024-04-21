@@ -46,6 +46,25 @@ class DataBaseDriver:
         record = result.single()
         return record
     
+    def createNews(self, news):
+        with self.driver.session() as session:
+            # greeting = session.execute_write(self._create_and_return_greeting, message)
+            nodeName = session.execute_write(self._create_news_return_name, news)
+            return nodeName
+
+    @staticmethod
+    def _create_news_return_name(tx, node):
+        query = ("CREATE (:news {type : '" + node["type"] +\
+                     "', title : '" + node["title"] +\
+                 "', description : '" + node["description"] + \
+                    "', images : "+str(node["images"])+"})")
+        
+        print(query)
+
+        result = tx.run(query)
+        
+        return node["type"]
+    
     def createSightRoute(self, startNode, finishNode, route):
         with self.driver.session() as session:
             # greeting = session.execute_write(self._create_and_return_greeting, message)
@@ -125,7 +144,17 @@ class DataBaseDriver:
             values = session.execute_read(self._get_all_sight_labels)
             return values
 
-        
+    @staticmethod 
+    def _get_some_news(tx, n):
+        query = "match (n:news) return n limit " + str(n)
+        result = tx.run(query)
+        return [record['n'] for record in result.data()]
+
+    def getSomeNews(self, n):
+        with self.driver.session() as session:
+            values = session.execute_read(self._get_some_news, n)
+            print(values)
+            return values        
     
     @staticmethod
     def _create_User(tx, newUser):
@@ -193,11 +222,11 @@ class DataBaseDriver:
                 WHERE exists(node.lat) AND exists(node.lon)\
                 WITH node, distance(point({latitude: node.lat, longitude: node.lon}), point({latitude: "+str(startPoint['lat'])+", longitude: "+str(startPoint['lon'])+"})) AS dist\
                 MATCH (p:Sight {name:node.name})\
-                CALL apoc.path.expand(p, 'FOOT_ROUTE', "+stringWithTags+", 3, 4)\
+                CALL apoc.path.expand(p, 'FOOT_ROUTE', "+stringWithTags+", 2, 4)\
                 YIELD path\
                 RETURN nodes(path), relationships(path), length(path) AS hops\
                 ORDER BY dist, hops\
-                LIMIT 10"
+                LIMIT 5"
         result = tx.run(query)
         # values = [record.values() for record in result]
         # return values
@@ -211,6 +240,56 @@ class DataBaseDriver:
             return values
         
 
+    @staticmethod  
+    def _generate_routes_by_start_and_finish_point(tx, startPoint, endPoint, stringWithTags):
+        print('startPoint[id]', startPoint['id'])
+        print('endPoint[id]', endPoint['id'])
+        query = "MATCH (p:Sight {id: '"+startPoint['id']+"'})\
+                MATCH (joe:Sight {id: '"+endPoint['id']+"'})\
+                CALL apoc.path.expandConfig(p, {\
+                    relationshipFilter: 'FOOT_ROUTE',\
+                    minLevel: 1,\
+                    maxLevel: 3,\
+                    terminatorNodes: [joe]\
+                })\
+                YIELD path\
+                RETURN path, length(path) AS hops\
+                ORDER BY hops\
+                LIMIT 1"
+        
+                    # labelFilter: '+biographical_museums',\
+        result = tx.run(query)
+        values = [record.values() for record in result]
+        return values
+        # return [{"nodes" : [dict(nodes) for nodes in paths.values()[0]],
+        #           "relationships" : [dict(arrow) for arrow in paths.values()[1]], 
+        #           "length": paths.values()[2]} for paths in result]
+
+    def generateRoutesByStartAndFinishPoint(self, startPoint, endPoint, stringWithTags):
+        with self.driver.session() as session:
+            values = session.execute_read(self._generate_routes_by_start_and_finish_point, startPoint, endPoint, stringWithTags)
+            return values
+        
+
+    @staticmethod  
+    def _find_the_nearest_point(tx, pointToAproximate):
+        query = "MATCH (node)\
+                WHERE exists(node.lat) AND exists(node.lon)\
+                WITH node, distance(point({latitude: node.lat, longitude: node.lon}), point({latitude: "+str(pointToAproximate['lat'])+", longitude: "+str(pointToAproximate['lon'])+"})) AS dist\
+                RETURN node, dist\
+                ORDER BY dist\
+                LIMIT 1"
+        result = tx.run(query)
+        # values = [record.values() for record in result]
+        # return values
+        return [dict(dict(point)['node']) for point in result]
+
+    def findTheNearestPoint(self, pointToAproximate):
+        with self.driver.session() as session:
+            values = session.execute_read(self._find_the_nearest_point, pointToAproximate)
+            return values
+        
+
     @staticmethod
     def _create_User_route(tx, user, route):
         query = (
@@ -218,6 +297,10 @@ class DataBaseDriver:
                                      name : '"+ route["name"] +"',\
                                      description : '"+ route["description"] +"', \
                                      sightsSubsequenceIds : " + route["sightsSubsequenceIds"] + "})\
+                WITH ur \
+                MATCH (user:User)\
+                WHERE user.email = '"+user["email"]+"' \
+                CREATE (user)-[:IS_AUTHOR]->(ur)\
                 WITH ur\
                 MATCH (sight:Sight)\
                 WHERE sight.id IN ur.sightsSubsequenceIds \
@@ -233,6 +316,21 @@ class DataBaseDriver:
             # greeting = session.execute_write(self._create_and_return_greeting, message)
             nodeName = session.execute_write(self._create_User_route, user, route)
             return nodeName
+    
+    @staticmethod  
+    def _export_all_ti_json(tx):
+        query = "CALL apoc.export.json.all('all.json',{useTypes:true});"
+        result = tx.run(query)
+        # values = [record.values() for record in result]
+        # return values
+        return result.value()
+
+    def exportAllToJSON(self):
+        with self.driver.session() as session:
+            values = session.execute_read(self._export_all_ti_json)
+            return values
+        
+    
 
 
 if __name__ == "__main__":
@@ -240,8 +338,8 @@ if __name__ == "__main__":
     f = open('data.json')
     data = json.load(f)
 
-    createNodes = False
-    createRoutes = False
+    createNodes = True
+    createRoutes = True
 
 
     if createNodes:
@@ -285,11 +383,11 @@ if __name__ == "__main__":
     f.close()
 
     # print(type(loader.getUserByEmail('zlobinandrey0707@gmail.com')))
-    bbox = {'latMin' : 59.92991679946971,
-            'latMax' : 59.931309097050196,
-            'lonMin' : 30.361646111301685,
-            'lonMax' : 30.368458922200304}
-    print (loader.getSightById(7099552))
+    # bbox = {'latMin' : 59.92991679946971,
+    #         'latMax' : 59.931309097050196,
+    #         'lonMin' : 30.361646111301685,
+    #         'lonMax' : 30.368458922200304}
+    # print (loader.getSightById(7099552))
 
 
 

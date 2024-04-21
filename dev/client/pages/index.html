@@ -63,9 +63,9 @@
                                         <div v-if="item.type!=='topic'" v-bind:class="[index==0 ? 'newsNotTopicShort':'newsNotTopic']">
                                             <div v-bind:class="[index==0 ? 'newsImagesViewShort':'newsImagesView']">
                                                 <div class="newsScrollContainer">
-                                                    <img src="/images/image1.jpg" alt="Cinque Terre">
-                                                    <img src="/images/image2.jpg" alt="Forest">
-                                                    <img src="/images/image3.jpg" alt="Northern Lights">
+                                                    <img v-bind:src="img" v-for="(img, img_index) in item.images">
+                                                    <!-- <img src="/images/image2.jpg" alt="Forest">
+                                                    <img src="/images/image3.jpg" alt="Northern Lights"> -->
                                                     <!-- <img src="/images/image1.jpg" alt="Mountains"> -->
                                                 </div>
 
@@ -84,7 +84,7 @@
                                     </div>
                                 </div>
                                 <div class="rightColumn">
-                                    <div v-for="(item, index) in newsListLeft" class="news">
+                                    <div v-for="(item, index) in newsListRight" class="news">
                                         
                                         <!-- class="news" -->
                                         <!-- {{ item.description }} -->
@@ -105,9 +105,10 @@
                                         <div v-if="item.type!=='topic'" class="newsNotTopic">
                                             <div class="newsImagesView'">
                                                 <div class="newsScrollContainer">
-                                                    <img src="/images/image1.jpg" alt="Cinque Terre">
+                                                    <img v-bind:src="imgR" v-for="(imgR, imgR_index) in item.images">
+                                                    <!-- <img src="/images/image1.jpg" alt="Cinque Terre">
                                                     <img src="/images/image2.jpg" alt="Forest">
-                                                    <img src="/images/image3.jpg" alt="Northern Lights">
+                                                    <img src="/images/image3.jpg" alt="Northern Lights"> -->
                                                     <!-- <img src="/images/image1.jpg" alt="Mountains"> -->
                                                 </div>
 
@@ -564,55 +565,91 @@
                         </div>
                         <div class="content_block">
                             
-                            <div class="parametersList">
+                            <div v-if="!showMapToSelectStartPosition" v-bind:class="showedRoute === '' ? 'parametersList' : 'parametersListHidden'">
                                 <div class="frame_with_inputs_label">
-                                    Route parametres
+                                    Place parametres
                                 </div>
                                 <div class="single_line_inp">
                                     <div class="single_line_inp_txt">
-                                        parameter1
+                                        Name
                                     </div>
-                                    <input class="single_line_inp_edit">
+                                    <input class="single_line_inp_edit" v-model="newPlace.name">
                                 </div>
-                                <div class="single_line_inp">
-                                    <div class="single_line_inp_txt">
-                                        parameter2
+                                
+                                
+                                <div class="tagInput">
+                                    <div class="removeMargin single_line_inp ">
+                                        <!-- <div v-if="selectedStrtPoint === ''" class="single_line_inp_txt">
+                                            Selected 
+                                            
+                                        </div>
+                                        <div v-if="selectedStrtPoint !== ''" class="single_line_inp_txt">
+                                            
+                                        </div> -->
+                                        Selected position of place: <br>
+                                        lon = {{newPlace.lon}} <br>
+                                        lat = {{newPlace.lat}}
                                     </div>
-                                    <input class="single_line_inp_edit">
-                                </div>
-                                <div class="single_line_inp">
-                                    <div class="single_line_inp_txt">
-                                        parameter3
+                                    <div class="BlockWithControlButtons removeMarginBottom">
+                                        <button class="funcBtn" v-on:click="showMapToSelectStartPosition = !showMapToSelectStartPosition">select on map</button>
                                     </div>
-                                    <input class="single_line_inp_edit">
                                 </div>
-                                <div class="single_line_inp">
-                                    <div class="single_line_inp_txt">
-                                        parameter4
+                                
+                                <div class="tagInput">
+                                    <div class="removeMargin single_line_inp ">
+                                        <div class="single_line_inp_txt">
+                                            Rate of place {{newPlace.rate}}
+                                        </div>
+                                        
                                     </div>
-                                    <input class="single_line_inp_edit">
-                                </div>
-                                <div class="single_line_inp">
-                                    <div class="single_line_inp_txt">
-                                        parameter5
+                                    <div class="listOfSelectedTags">
+                                        <input type="range" min="0" max="10" step="1" v-model="newPlace.rate" class="draggingInput">
+                                        
                                     </div>
-                                    <input class="single_line_inp_edit">
+                                    
                                 </div>
-                                <div class="frame_with_inputs_label">
-                                    Preferences
-                                </div>
-                                <div class="single_line_inp">
-                                    <div class="single_line_inp_txt">
-                                        parameter1
+                                
+                                <!-- type = node['type'],
+                                id = node['id'],
+                                # geometry = node['geometry'],
+                                lon = node['geometry']['coordinates'][0],
+                                lat = node['geometry']['coordinates'][1],
+                                name = node['properties']['name'],
+                                rate = node['properties']['rate'],
+                                properties = str(node['properties']),
+                                kinds = node['properties']['kinds']) -->
+                                <div class="tagInput">
+                                    <div class="removeMargin single_line_inp ">
+                                        <div class="single_line_inp_txt">
+                                            Suitable tags 
+                                        </div>
+                                        <!-- selectedTagsExactlyYes -->
+                                        
+                                        <!-- <input class="single_line_inp_edit" list="ExactlyYesTags" autocomplete="on" text="selectedTagsExactlyYes">
+                                        <datalist id="ExactlyYesTags" class="tagSelectTipList">
+                                            <option v-for="(tag, index) in avaliableTagsExactlyYes" class="tagSelectTip"> {{tag}} </option>
+                                            
+                                            <input type="submit">
+                                        </datalist> -->
                                     </div>
-                                    <input class="single_line_inp_edit">
-                                </div>
-                                <div class="single_line_inp">
-                                    <div class="single_line_inp_txt">
-                                        parameter2
+                                    <div class="listOfSelectedTags">
+                                        <div class="listOfSelectedTagsScrollBar">
+                                            <div v-for="(tag, index) in avaliableTagsOfNewSight" class="selectedTag"> 
+                                                <input type="checkbox" v-bind:id="tag" v-bind:value="tag" v-model="selectedTagsOfNewSight">
+                                                <label class="selectedTagLabel" v-bind:for="tag">{{tag}}</label>
+                                            </div>
+                                        </div>
+    
                                     </div>
-                                    <input class="single_line_inp_edit">
+                                    
                                 </div>
+                                
+                                <div class="BlockWithControlButtons removeMarginBottom">
+                                    <button class="funcBtn" v-on:click="tryToSearch">Find</button>
+                                    <button class="cancelBtn" v-on:click="tryToCancel">Cancel</button>
+                                    <!-- editingRouteList.splice(editingRouteList.find((element) => element.id === item.id), 1) -->
+                                </div>
+                                
                             </div>
                             <div class="addNewPlaceMap">
                                 <div class="mapHolder">

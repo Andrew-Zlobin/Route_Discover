@@ -3,7 +3,7 @@ from fastapi import FastAPI, Depends, Request, Response, status, Body
 from starlette.responses import RedirectResponse, HTMLResponse, JSONResponse
 from fastapi_login import *
 
-from pydantic import BaseModel
+# from pydantic import BaseModel
 
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordRequestForm
@@ -179,16 +179,20 @@ def getSightById (body = Body()):
 
 
 @app.post('/create/route')
-def createRoute (body = Body()):
+def createRoute (body = Body(), user=Depends(manager)):
     body = json.loads(body)
 
     print(body, flush=True)
-    fake_db.createNewRoute("user", body)
+    fake_db.createNewRoute(user, body)
     return {'success' : 'ok'} 
     
 @app.post('/get/preferences')
 def getPrefereces():
     return fake_db.getPrefereces()
+
+@app.post('/get/news')
+def getNews():
+    return fake_db.getNews()
 
 @app.post('/search/sutable/routes')
 def searchSutableRoutes (body= Body()):
@@ -217,6 +221,20 @@ def getAllRoutes(body= Body()):
 
     print(body, flush=True)
     return fake_db.getAllRoutes(body)
+
+@app.post('/data/import')
+def dataImport(request: Request, user=Depends(manager)):
+    if isAdmin(user['email']):
+        return {'success' : 'ok'}
+    
+@app.post('/data/export')
+def dataExport(request: Request, user=Depends(manager)):
+    if isAdmin(user['email']):
+        res = fake_db.exportAllToJSON()
+        if res[0] == 'all.json':
+            return {'success' : 'ok'}
+        else:
+            return {'success' : 'failed'}
 
 
 app.mount("/", StaticFiles(directory=os.path.abspath(os.path.join( os.path.dirname(__file__), '..', 'client', 'static'))), name="static")

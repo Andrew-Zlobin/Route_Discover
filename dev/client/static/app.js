@@ -13,67 +13,9 @@ const App = {
             showMapToSelectStartPosition : false,
             showMapToSelectEndPosition : false,
 
-            newsListLeft : [
-                {
-                    type : "event",
-                    id : 0,
-                    title : "Smth new and timelimited",
-                    description : "have time to visit!",
-                    images : [""]
-                },
-                {
-                    type : "place",
-                    id : 0,
-                    title : "New interesting place",
-                    description : "Some Description",
-                    images : [""]
-                },
-                {
-                    type : "route",
-                    id : 0,
-                    title : "Interesting route",
-                    description : "New interesting route",
-                    images : [""]
-                },
-                {
-                    type : "topic",
-                    id : 0,
-                    title : "Topic",
-                    description : "Long read",
-                    images : [""]
-                }
-            ],
+            newsListLeft : [],
 
-            newsListRight : [
-                {
-                    type : "event",
-                    id : 0,
-                    title : "Smth new and timelimited",
-                    description : "have time to visit!",
-                    images : [""]
-                },
-                {
-                    type : "place",
-                    id : 0,
-                    title : "New interesting place",
-                    description : "Some Description",
-                    images : [""]
-                },
-                {
-                    type : "route",
-                    id : 0,
-                    title : "Interesting route",
-                    description : "New interesting route",
-                    images : [""]
-                },
-                {
-                    type : "topic",
-                    id : 0,
-                    title : "Topic",
-                    description : "Long read",
-                    images : [""]
-                }
-            ],
+            newsListRight : [],
 
             editingRouteList : [
 
@@ -110,15 +52,37 @@ const App = {
             selectedStrtPoint : '',
             selectedEndPoint : '',
 
+            selectedTagsOfNewSight :[],
+            avaliableTagsOfNewSight :[],
+
+            newPlace : {
+                type : '',
+                id : '',
+                // # geometry = node['geometry'],
+                lon : 0,
+                lat : 0,
+                name : '', // +
+                rate : 5,
+                properties : '',
+                kinds : []//node['properties']['kinds']
+            }
+
         }
     },
     mounted() {
         this.getCurrentUser();
+        if (this.currentPage == 0) {
+            // document.getElementById("news").style.color="#0D99FF";
+            if (this.newsListRight.length === 0 && this.newsListLeft.length === 0)
+            this.getNews();
+        }
     },
 
     updated(){
         if (this.currentPage == 0) {
             // document.getElementById("news").style.color="#0D99FF";
+            if (this.newsListRight.length === 0 && this.newsListLeft.length === 0)
+            this.getNews();
         }
         if (this.currentPage == 1) {
             if (this.avaliableTagsExactlyYes.length === 0 && this.avaliableTagsExactlyNo.length === 0)
@@ -133,7 +97,8 @@ const App = {
         }
         if (this.currentPage == 3) {
             if (this.addPlace) {
-            this.startMap();
+                this.getAvaliableTags()
+                this.startMapForSelectingNewSightPosition();
 
             }
             if (this.addRoute) {
@@ -147,6 +112,92 @@ const App = {
     },
 
     methods : {
+
+        getNews() {
+            console.log("get news");
+            fetch("/get/news", 
+                {
+                    method: "POST",
+                    
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                        // Authorization: 'Bearer '+ localStorage.access_token ,
+                    }
+                    }
+                    ).then((response) => response.json()).then((json) => {
+                        
+                        console.log(json) 
+                        for (let i = 0; i < json.length; i++) {
+                            if (i % 2 == 0) {
+                                this.newsListLeft.push(json[i]);
+                            }
+                            else {
+                                this.newsListRight.push(json[i]);
+                            }
+                          }
+                        console.log(this.newsListLeft[0]);
+                        console.log(this.newsListRight[0]);
+            });
+        },
+
+
+        startMapForSelectingNewSightPosition() {
+            console.log("map called", document.getElementById("demoMap"));
+            
+            
+            var lat            = 59.9275;
+            var lon            = 30.3346;
+            var zoom           = 12;
+
+            var fromProjection = new OpenLayers.Projection("EPSG:4326");   // Transform from WGS 1984
+            var toProjection   = new OpenLayers.Projection("EPSG:900913"); // to Spherical Mercator Projection
+            var position       = new OpenLayers.LonLat(lon, lat).transform( fromProjection, toProjection);
+
+            map = new OpenLayers.Map("demoMap");
+            var mapnik         = new OpenLayers.Layer.OSM();
+            map.addLayer(mapnik);
+
+            
+            var markers = new OpenLayers.Layer.Markers("Markers");
+            
+            
+            //  console.log(map);
+            map.addLayer(markers);
+
+            
+
+            map.setCenter(position, zoom);
+
+            console.log(map);
+            map.events.register("click", map, (evt)=> {
+                markers.clearMarkers();
+                
+                // getSightsPoins(map);
+                console.log(evt.xy);
+                // console.log(new OpenLayers.LonLat(evt.xy.x, evt.x.y)
+                //console.log(evt.xy.transform(toProjection, fromProjection ));
+                var lonlat = map.getLonLatFromPixel(evt.xy);
+                var converted = lonlat.transform(map.getProjectionObject(), new OpenLayers.Projection("EPSG:4326"));
+                console.log(converted);
+                // if (this.showMapToSelectStartPosition)
+                //     this.selectedStrtPoint = converted;
+                // if (this.showMapToSelectEndPosition)
+                //     this.selectedEndPoint = converted;
+                this.newPlace.lon = converted.lon;
+                this.newPlace.lat = converted.lat;
+
+                // markers.addMarker(new OpenLayers.Marker(converted));
+                // var lonLat = new OpenLayers.LonLat(converted.lon, converted.lat);
+                var lonLat = new OpenLayers.LonLat(converted.lon, converted.lat).transform( fromProjection, toProjection);
+                var marker = new OpenLayers.Marker(lonLat); //, icon.clone()
+                        
+                markers.addMarker(marker);
+            });
+
+            
+                
+            
+        },
 
         startMapForSelectingStartPosition() {
             console.log("map called", document.getElementById("demoMap"));
@@ -289,9 +340,27 @@ const App = {
             this.where = '';
             this.selectedTagsExactlyYes = [];
             this.selectedTagsExactlyNo = [];
-            this.avaliableTagsExactlyYes = [];
-            this.avaliableTagsExactlyNo = [];
+            // this.avaliableTagsExactlyYes = [];
+            // this.avaliableTagsExactlyNo = [];
             this.getPreferences();
+        },
+
+        getAvaliableTags() {
+            console.log("getAvaliableTags");
+            fetch("/get/preferences", 
+                {
+                    method: "POST",
+                    
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                        // Authorization: 'Bearer '+ localStorage.access_token ,
+                    }
+                    }
+                    ).then((response) => response.json()).then((json) => {
+                        // console.log(json)       
+                        this.avaliableTagsOfNewSight = json["TagsExactlyYes"];
+                        
+            });
         },
 
         getPreferences() {
