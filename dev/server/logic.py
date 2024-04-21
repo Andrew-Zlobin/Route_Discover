@@ -54,7 +54,7 @@ class ServerLogic:
     
 
     def getNews(self):
-        return self.__dataBaseDriver.getSomeNews(10)
+        return self.__dataBaseDriver.getSomeNews(100)
         # return [
             
         #         {
