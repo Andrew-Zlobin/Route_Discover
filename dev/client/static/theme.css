@@ -561,6 +561,11 @@ div.scroll-container {
     position: fixed;
 }
 
+.selectStartPointOnMap {
+    width : 100%;
+    height: 100%;
+}
+
 .addNewRouteMap {
     width: 45%;
     min-width: 200px;
@@ -1353,6 +1358,45 @@ div.scroll-container {
 
 .showContainedRoutesScrollBarAdaptation {
     width: 100%;
+}
+
+.admiPanelMapTitle {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center; 
+    font-size: large;
+    font-weight: bold;
+    height: 15%;
+}
+
+
+.parametersListAdminPanelExtention {
+    width: 25%;
+}
+
+.showRouteInfoLeftAreaAdminPanelExtention {
+    justify-content: space-between;
+    width: 100%;
+}
+
+.editRouteOnePointImagesViewAdminPanelExtention {
+    width: 98%;
+}
+
+
+.searchResultTitleAdminPanelExtention {
+    margin: 5px;
+}
+
+.parametersListManageRoutes {
+    width: 25%;
+    margin-left: 5%;
+}
+
+.draggingInput {
+    width:94%;
+    margin : 3%;
 }
 
 .book_photo_preview {
